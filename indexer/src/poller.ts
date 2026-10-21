@@ -51,6 +51,7 @@ import {
   TimeoutError,
   CancellationError,
 } from './timeout.js';
+import { recordLastSuccessfulPoll } from './health.js';
 
 dotenv.config();
 
@@ -831,6 +832,7 @@ async function pollContract(
         latestLedgerProcessedGauge.set(advanceTo);
         syncLatencyGauge.set(Math.max(0, networkLatestLedger - advanceTo));
         recordProgress();
+        recordLastSuccessfulPoll();
 
         // ── Per-contract registry progress update (Issue #441) ───────────
         try {
