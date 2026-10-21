@@ -27,7 +27,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "node init && tsc",
     "validate": "node --input-type=module < scripts/validate-abi.mjs",
     "prepublishOnly": "npm run build"
   },

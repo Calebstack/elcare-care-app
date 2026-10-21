@@ -15,6 +15,46 @@ import { VERSION } from './config.js';
 import { getLeaseStatus } from './coordination/lease.js';
 import { getCurrentFencedLease } from './fenced-lease.js';
 
+// ── Last-poll timestamp (Issue #926) ─────────────────────────────────────────
+//
+// The poller calls `recordLastSuccessfulPoll()` after every successful window
+// commit.  `getLastSuccessfulPollIso()` surfaces it through the health/status
+// endpoint so operators can tell when the indexer last made progress without
+// having to cross-reference logs.
+//
+// The value is process-local (in-memory).  On a fresh restart it is null until
+// the first successful poll completes, which is the correct and honest answer.
+
+let _lastSuccessfulPollMs: number | null = null;
+
+/**
+ * Record the current wall-clock time as the last successful poll instant.
+ * Called by the polling loop after each committed window.
+ */
+export function recordLastSuccessfulPoll(): void {
+  _lastSuccessfulPollMs = Date.now();
+}
+
+/**
+ * Return the UTC ISO-8601 string of the last successful poll, or null if no
+ * poll has completed since the process started.
+ *
+ * Format: "2026-10-20T14:35:00.000Z"  (stable, zero-padded, always UTC).
+ */
+export function getLastSuccessfulPollIso(): string | null {
+  return _lastSuccessfulPollMs !== null
+    ? new Date(_lastSuccessfulPollMs).toISOString()
+    : null;
+}
+
+/**
+ * Exposed for unit tests only — resets the in-memory timestamp.
+ * @internal
+ */
+export function _resetLastSuccessfulPoll(): void {
+  _lastSuccessfulPollMs = null;
+}
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export type CheckStatus = 'ok' | 'degraded' | 'down';
@@ -31,6 +71,12 @@ export interface AggregateHealth {
   checks: Record<string, HealthCheckResult>;
   /** Unix timestamp (ms) when this snapshot was taken. */
   timestamp: number;
+  /**
+   * UTC ISO-8601 timestamp of the last successful poll commit (Issue #926).
+   * Null when no poll has completed since the process started.
+   * Format: "2026-10-20T14:35:00.000Z"
+   */
+  lastSuccessfulPoll: string | null;
   /** Component version metadata for runtime identification. */
   version: {
     app: string;
@@ -262,6 +308,7 @@ export async function runAllChecks(): Promise<AggregateHealth> {
     status: overall,
     checks,
     timestamp: Date.now(),
+    lastSuccessfulPoll: getLastSuccessfulPollIso(),
     version: {
       app: VERSION.app,
       api: VERSION.api,
