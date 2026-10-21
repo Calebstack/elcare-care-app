@@ -17,9 +17,7 @@ tsconfig.tsbuildinfo
 **/tsconfig.tsbuildinfo
 
 # Environment files — NEVER commit secrets
-.env.local
 .env.*.local
-.env
 scripts/deploy/.env.deploy
 .stellar/
 scripts/deploy/.stellar/
@@ -42,7 +40,6 @@ Thumbs.db
 *~
 
 # IDE
-.vscode/
 .idea/
 
 # WASM / build outputs
@@ -152,3 +149,4 @@ CONTRIBUTING-SCHEMA-CHANGES.md
 
 # Local change summary (not for version control)
 changes.md
+config.bat
