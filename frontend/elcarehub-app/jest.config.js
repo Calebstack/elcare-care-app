@@ -68,4 +68,4 @@ module.exports = {
     './src/lib/disclosures.ts':           { statements: 80, branches: 70, functions: 75, lines: 80 },
     './src/lib/support.ts':               { statements: 80, branches: 70, functions: 75, lines: 80 },
   },
-}
+};

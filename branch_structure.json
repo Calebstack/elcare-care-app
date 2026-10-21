@@ -1,0 +1,18 @@
+{
+  "default_branch": "main",
+  "branches": [
+    "main",
+    "origin",
+    "test/listing-detail-conditional-get-917"
+  ],
+  "parent": {
+    "main": null,
+    "origin": "main",
+    "test/listing-detail-conditional-get-917": "main"
+  },
+  "order": [
+    "main",
+    "origin",
+    "test/listing-detail-conditional-get-917"
+  ]
+}
