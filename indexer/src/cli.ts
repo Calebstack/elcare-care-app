@@ -10,6 +10,43 @@
  *   npm run cli -- gaps list
  *   npm run cli -- gaps repair [--gap=<id>]
  *   npm run cli -- gaps open          # alias for gaps list --status=Open
+ *
+ * ── Backfill range semantics (Issue #925) ─────────────────────────────────────
+ *
+ * FLAGS
+ *   --start=<ledger>   First ledger to ingest (INCLUSIVE).
+ *   --end=<ledger>     Last  ledger to ingest (INCLUSIVE, defaults to chain tip).
+ *
+ * CHECKPOINT INTERACTION
+ *   The backfill command NEVER overwrites the live sync cursor stored in
+ *   SyncState.  The cursor-interaction rule is:
+ *
+ *     • "below"       — backfill range is entirely below the live cursor.
+ *                       SyncState is left untouched.
+ *     • "overlapping" — backfill range straddles the live cursor.
+ *                       SyncState is left untouched.
+ *     • "ahead"       — backfill range is entirely beyond the live cursor.
+ *                       SyncState IS advanced to the highest processed ledger.
+ *
+ *   On crash / resume, the backfill resumes from
+ *   `checkpointLedger + 1`, NOT from `--start`.  The `checkpointLedger`
+ *   column in the BackfillJob row is updated atomically per batch inside the
+ *   same DB transaction that writes the event rows.  A crash between batches
+ *   therefore leaves the checkpoint at the last *fully committed* batch, so
+ *   replay is safe and idempotent (duplicate event writes are rejected by the
+ *   `eventHash` unique constraint).
+ *
+ * EXAMPLE — ingest ledgers 1 000 000 to 1 500 000
+ *   npm run cli -- backfill --start=1000000 --end=1500000
+ *
+ *   If the process crashes at ledger 1 200 000 the next run with the same
+ *   flags will fast-forward to 1 200 001 automatically.  Alternatively,
+ *   resume by job ID (avoids re-validating the range against the chain tip):
+ *
+ *   npm run cli -- backfill resume 42
+ *
+ * EXAMPLE — ingest all history not yet covered (start from beginning)
+ *   npm run cli -- backfill --start=0   # end defaults to current chain tip
  */
 
 import dotenv from 'dotenv';
